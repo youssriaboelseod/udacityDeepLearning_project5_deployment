@@ -68,59 +68,31 @@ def train(model, train_loader, epochs, optimizer, loss_fn, device):
     """
     
     # TODO: Paste the train() method developed in the notebook here.
-
     for epoch in range(1, epochs + 1):
-        model.train()
-        total_loss = 0
-        for batch in train_loader:         
-            batch_X, batch_y = batch
-            
-            batch_X = batch_X.to(device)
-            batch_y = batch_y.to(device)
-            
-            # TODO: Complete this train method to train the model provided.
-            #_____________
-            h = model.(batch_X)
+            model.train()
+            total_loss = 0
+            for batch in train_loader:         
+                batch_X, batch_y = batch
 
-            # Creating new variables for the hidden state, otherwise
-            # we'd backprop through the entire training history
-            h = tuple([each.train_loader for each in h])
+                batch_X = batch_X.to(device)
+                batch_y = batch_y.to(device)
 
-            # zero accumulated gradients
-            net.zero_grad()
+                # TODO: Complete this train method to train the model provided.
+                    #reference:https://github.com/cbovar/Deploying-a-Sentiment-Analysis-Model/blob/master/SageMaker%20Project.ipynb
 
-            # get the output from the model
-            output, h = model(batch_X, h)
+                optimizer.zero_grad()
+                # get the output from the model
+                output= model.forward(batch_X)
 
-            # calculate the loss and perform backprop
-            loss = criterion(batch_y.squeeze(), labels.float())
-            loss.backward()
-            # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
-            nn.utils.clip_grad_norm_(model.parameters(), clip)
-            optimizer.step()
+                # calculate the loss and perform backprop
+                loss = loss_fn(output, batch_y)
+                loss.backward()
+                # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
+                #nn.utils.clip_grad_norm_(model.parameters(), 5)
+                optimizer.step()
 
-            # loss stats
-            if counter % print_every == 0:
-                # Get validation loss
-                val_h = model.init_hidden(batch)#(batch_size)
-                val_losses = []
-                model.eval()
-                for inputs, labels in valid_loader:
-
-                    # Creating new variables for the hidden state, otherwise
-                    # we'd backprop through the entire training history
-                    val_h = tuple([each.train_loader for each in val_h])
-
-                    if(train_on_gpu):
-                        inputs, labels = inputs.cuda(), labels.cuda()
-
-                    output, val_h = model(inputs, val_h)
-                    val_loss = criterion(output.squeeze(), labels.float())
-
-                    val_losses.append(val_loss.item())
-            #_____________
-            total_loss += val_losses.train_loader.item()
-        print("Epoch: {}, BCELoss: {}".format(epoch, total_loss / len(train_loader)))
+                total_loss += loss.data.item()
+            print("Epoch: {}, BCELoss: {}".format(epoch, total_loss / len(train_loader)))
 
 
 if __name__ == '__main__':
