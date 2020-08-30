@@ -10,6 +10,7 @@ import torch.optim as optim
 import torch.utils.data
 
 from model import LSTMClassifier
+import torch.nn as nn
 
 def model_fn(model_dir):
     """Load the PyTorch model from the `model_dir` directory."""
@@ -69,30 +70,31 @@ def train(model, train_loader, epochs, optimizer, loss_fn, device):
     
     # TODO: Paste the train() method developed in the notebook here.
     for epoch in range(1, epochs + 1):
-            model.train()
-            total_loss = 0
-            for batch in train_loader:         
-                batch_X, batch_y = batch
+        model.train()
+        total_loss = 0
+        for batch in train_loader:         
+            batch_X, batch_y = batch
+            
+            batch_X = batch_X.to(device)
+            batch_y = batch_y.to(device)
+            
+            # TODO: Complete this train method to train the model provided.
+                #reference:https://github.com/cbovar/Deploying-a-Sentiment-Analysis-Model/blob/master/SageMaker%20Project.ipynb
+            
+            model.zero_grad()
 
-                batch_X = batch_X.to(device)
-                batch_y = batch_y.to(device)
+            # get the output from the model
+            output= model(batch_X)
 
-                # TODO: Complete this train method to train the model provided.
-                    #reference:https://github.com/cbovar/Deploying-a-Sentiment-Analysis-Model/blob/master/SageMaker%20Project.ipynb
+            # calculate the loss and perform backprop
+            loss = loss_fn(output, batch_y)
+            loss.backward()
+            # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
+            nn.utils.clip_grad_norm_(model.parameters(), 5)
+            optimizer.step()
 
-                optimizer.zero_grad()
-                # get the output from the model
-                output= model.forward(batch_X)
-
-                # calculate the loss and perform backprop
-                loss = loss_fn(output, batch_y)
-                loss.backward()
-                # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
-                #nn.utils.clip_grad_norm_(model.parameters(), 5)
-                optimizer.step()
-
-                total_loss += loss.data.item()
-            print("Epoch: {}, BCELoss: {}".format(epoch, total_loss / len(train_loader)))
+            total_loss += loss.data.item()
+        print("Epoch: {}, BCELoss: {}".format(epoch, total_loss / len(train_loader)))
 
 
 if __name__ == '__main__':
